@@ -17,7 +17,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, err := url.ParseRequestURI(args[1]); err != nil {
+	if _, err := url.ParseRequestURI(args[1]); err != nil { //url.ParseRequestURI untuk memparsing URL
 		fmt.Printf("Usage: ./http-get <url>\n\nURL is not valid URL: %s\n", args[1])
 		os.Exit(1)
 	}
@@ -33,7 +33,8 @@ func main() {
 	body, err := io.ReadAll(response.Body)
 
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Failed to read response body: %v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("HTTP Status Code: %d\nBody: %s\n", response.StatusCode, string(body))

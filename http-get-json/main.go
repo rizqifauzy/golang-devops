@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// { "page": "example","input": "sample input","words": ["hello", "world", "devops"]}
 type Words struct {
 	Page  string   `json:"page"`
 	Input string   `json:"input"`
