@@ -89,21 +89,4 @@ func main() {
 	}
 
 	fmt.Printf("Response: \n%s\n", message.GetResponse())
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	// if statusCode == 0 {
-	// 	fmt.Println("Terjadi kesalahan saat menjalankan kode")
-
-	// }
-	// if statusCode == 400 {
-	// 	fmt.Println("VM sudah dalam kondisi DESIRED STATE")
-
-	// }
-	// if statusCode == 204 {
-	// 	fmt.Println("Kode berhasil dijalankan")
-
-	// }
-	//fmt.Println("Status Code: ", statusCode)
-	//fmt.Println("Kode berhasil dijalankan")
 }
