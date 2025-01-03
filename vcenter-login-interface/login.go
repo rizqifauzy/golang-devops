@@ -1,18 +1,17 @@
 package main
 
 import (
-	"crypto/tls" // Import package tls
-	"fmt"        // Import fmt untuk logging
+	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 )
 
-// Fungsi DoLoginRequest untuk melakukan login ke vCenter
 func DoLoginRequest(url string, username string, password string) (string, error) {
 	// Membuat request HTTP
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error membuat request HTTP: %w", err)
 	}
 
 	// Mengatur Basic Auth
@@ -26,14 +25,14 @@ func DoLoginRequest(url string, username string, password string) (string, error
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error mengirimkan request HTTP: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Membaca response HTTP
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error membaca body respons: %w", err)
 	}
 
 	// Log status dan body respons
