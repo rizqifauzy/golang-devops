@@ -1,3 +1,3 @@
-module github.com/wardviaene/golang-for-devops-course/http-get-flags
+module github.com/rizqifauzy/golang-devops/refactor/http-login-pkg
 
-go 1.18
+go 1.22.4
