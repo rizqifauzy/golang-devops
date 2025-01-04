@@ -15,9 +15,6 @@ func DoPowerRequest(url string, sessionId string, action string) (Output, error)
 	// Membuat URL dengan parameter action
 	powerUrl := fmt.Sprintf("%s?action=%s", url, action)
 
-	// Cetak URL yang akan digunakan
-	fmt.Printf("Power URL: %s\n", powerUrl)
-
 	// Membuat body kosong karena tidak diperlukan
 	body := strings.NewReader("") // Body kosong
 
@@ -36,11 +33,11 @@ func DoPowerRequest(url string, sessionId string, action string) (Output, error)
 	//fmt.Printf("Request Headers: %v\n", req.Header)
 
 	// Dump request untuk debugging
-	dump, err := httputil.DumpRequest(req, true)
+	_, err = httputil.DumpRequest(req, true)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Request Dump:\n%s\n", dump)
+	//fmt.Printf("Request Dump:\n%s\n", dump)
 
 	// Mengirimkan request HTTP dengan client yang mengabaikan verifikasi TLS
 	client := &http.Client{
@@ -78,17 +75,11 @@ func DoPowerRequest(url string, sessionId string, action string) (Output, error)
 		return nil, fmt.Errorf("unmarshal error: %s", err)
 	}
 
-	// Log status dan body respons
-	//fmt.Printf("Power Response Status: %s\n", resp.Status)
-	//fmt.Printf("Power Response Body: %s\n", bodyBytes)
-
 	// Cek apakah ada error dalam respons
 	if resp.StatusCode == 400 {
-		fmt.Println("Status: ", resp.Status)
-		//return nil, fmt.Errorf("failed to power on VM: %s", bodyBytes)
+
 		return response, nil
 	}
-	//fmt.Println("Status: ", resp.Status)
 
 	return response, nil
 }
