@@ -1,15 +1,13 @@
 package main
 
 import (
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 
-	"github.com/rizqifauzy/golang-devops/refactor/vcenter-login-pkg/api"
+	"github.com/rizqifauzy/golang-devops/refactor/vcenter-login-api/api"
 )
 
 // Definisikan struct baru untuk mengimplementasikan antarmuka Output
@@ -51,32 +49,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Mengirimkan request HTTP dengan client yang mengabaikan verifikasi TLS
-	tlsConfig := &tls.Config{InsecureSkipVerify: true}
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-	client := http.Client{
-		Transport: transport,
-	}
+	// Mengirimkan request HTTP dengan client yang mengabaikan verifikasi TL
 
-	sessionId, err := api.DoLoginRequest(client, parsedURL.Scheme+"://"+parsedURL.Host+"/api/session", username, password)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if sessionId == "" {
-		log.Fatal("Gagal mendapatkan session ID")
-	}
-
-	client.Transport = &api.MyJWTTransport{
-		Transport: transport,
-		SessionId: sessionId,
-	}
+	apiInstance := api.New(api.Options{
+		Password: password,
+		Username: username,
+		LoginURL: parsedURL.Scheme + "://" + parsedURL.Host + "/api/session",
+	})
 
 	vmUrl := parsedURL.String() + fmt.Sprintf("/api/vcenter/vm/%s/power", vmName)
 
-	message, err := api.DoPowerRequest(client, vmUrl, sessionId, "stop") // Ganti "stop" dengan "start"
+	message, err := apiInstance.DoPowerRequest(vmUrl, "stop")
 
 	if err != nil {
 		if requestErr, ok := err.(api.RequestError); ok {

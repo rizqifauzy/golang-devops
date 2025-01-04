@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func DoLoginRequest(client http.Client, url string, username string, password string) (string, error) {
+func doLoginRequest(client http.Client, url string, username string, password string) (string, error) {
 	// Membuat request HTTP
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {

@@ -34,7 +34,7 @@ func (r Response) GetResponse() string {
 }
 
 // Fungsi DoPowerRequest untuk menghidupkan atau mematikan VM
-func (a api) DoPowerRequest(url string, action string) (Output, error) {
+func DoPowerRequest(client http.Client, url string, sessionId string, action string) (Output, error) {
 	// Membuat URL dengan parameter action
 	powerUrl := fmt.Sprintf("%s?action=%s", url, action)
 
@@ -47,7 +47,7 @@ func (a api) DoPowerRequest(url string, action string) (Output, error) {
 		return nil, err
 	}
 
-	resp, err := a.Client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		//return nil, fmt.Errorf("Invalid: %s", err)
 		return nil, err

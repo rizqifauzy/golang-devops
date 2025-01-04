@@ -26,6 +26,7 @@ use (
 	./oidc-start
 	./reader-example
 	./refactor/http-login-pkg
+	./refactor/vcenter-login-api
 	./refactor/vcenter-login-pkg
 	./slices-demo
 	./ssh-demo

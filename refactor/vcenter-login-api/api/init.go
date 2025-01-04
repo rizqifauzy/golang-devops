@@ -37,6 +37,8 @@ func New(options Options) APIIface {
 			Transport: &MyJWTTransport{
 				Transport: transport,
 				loginURL:  options.LoginURL,
+				username:  options.Username,
+				password:  options.Password,
 			},
 		},
 	}
