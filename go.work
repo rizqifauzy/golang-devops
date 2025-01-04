@@ -17,6 +17,7 @@ use (
 	./http-get-json-map
 	./http-login
 	./http-login-packaged
+	./http-login-pkg
 	./http-login-tests
 	./kubernetes-deploy
 	./kubernetes-deploy-github
@@ -24,6 +25,7 @@ use (
 	./oidc-demo
 	./oidc-start
 	./reader-example
+	./refactor/http-login-pkg
 	./slices-demo
 	./ssh-demo
 	./test-server

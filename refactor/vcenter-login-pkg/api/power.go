@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	// Import package tls
@@ -8,6 +8,30 @@ import (
 	"net/http" // Impor package httputil untuk DumpRequest
 	"strings"
 )
+
+type Output interface {
+	GetResponse() string
+}
+
+// Definisikan struct untuk menampung seluruh respons JSON
+type Response struct {
+	ErrorType string    `json:"error_type"`
+	Messages  []Message `json:"messages"`
+}
+
+// Definisikan struct untuk menampung setiap pesan dalam array messages
+type Message struct {
+	Args           []interface{} `json:"args"`
+	DefaultMessage string        `json:"default_message"`
+	ID             string        `json:"id"`
+}
+
+func (r Response) GetResponse() string {
+	if len(r.Messages) == 0 {
+		return "No messages available"
+	}
+	return fmt.Sprintf("Status: %s\nMessage: %s", r.ErrorType, r.Messages[0].DefaultMessage)
+}
 
 // Fungsi DoPowerRequest untuk menghidupkan atau mematikan VM
 func DoPowerRequest(client http.Client, url string, sessionId string, action string) (Output, error) {

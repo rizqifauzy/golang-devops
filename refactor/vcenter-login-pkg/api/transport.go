@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -8,14 +8,14 @@ import (
 )
 
 type MyJWTTransport struct {
-	transport http.RoundTripper
-	sessionId string
+	Transport http.RoundTripper
+	SessionId string
 }
 
 func (m *MyJWTTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if m.sessionId != "" {
-		m.sessionId = strings.Trim(m.sessionId, "\"")
-		req.Header.Set("vmware-api-session-id", m.sessionId)
+	if m.SessionId != "" {
+		m.SessionId = strings.Trim(m.SessionId, "\"")
+		req.Header.Set("vmware-api-session-id", m.SessionId)
 		req.Header.Set("Content-Type", "application/json")
 	}
 
@@ -26,5 +26,5 @@ func (m *MyJWTTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	fmt.Printf("Request Dump in MyJWTTransport:\n%s\n", dump)
 
-	return m.transport.RoundTrip(req)
+	return m.Transport.RoundTrip(req)
 }

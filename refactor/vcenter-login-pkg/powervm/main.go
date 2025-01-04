@@ -8,31 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/rizqifauzy/golang-devops/refactor/vcenter-login-pkg/api"
 )
-
-type Output interface {
-	GetResponse() string
-}
-
-// Definisikan struct untuk menampung seluruh respons JSON
-type Response struct {
-	ErrorType string    `json:"error_type"`
-	Messages  []Message `json:"messages"`
-}
-
-// Definisikan struct untuk menampung setiap pesan dalam array messages
-type Message struct {
-	Args           []interface{} `json:"args"`
-	DefaultMessage string        `json:"default_message"`
-	ID             string        `json:"id"`
-}
-
-func (r Response) GetResponse() string {
-	if len(r.Messages) == 0 {
-		return "No messages available"
-	}
-	return fmt.Sprintf("Status: %s\nMessage: %s", r.ErrorType, r.Messages[0].DefaultMessage)
-}
 
 // Definisikan struct baru untuk mengimplementasikan antarmuka Output
 // type JSONResponse struct {
@@ -82,7 +60,7 @@ func main() {
 		Transport: transport,
 	}
 
-	sessionId, err := DoLoginRequest(client, parsedURL.Scheme+"://"+parsedURL.Host+"/api/session", username, password)
+	sessionId, err := api.DoLoginRequest(client, parsedURL.Scheme+"://"+parsedURL.Host+"/api/session", username, password)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,17 +69,17 @@ func main() {
 		log.Fatal("Gagal mendapatkan session ID")
 	}
 
-	client.Transport = &MyJWTTransport{
-		transport: transport,
-		sessionId: sessionId,
+	client.Transport = &api.MyJWTTransport{
+		Transport: transport,
+		SessionId: sessionId,
 	}
 
 	vmUrl := parsedURL.String() + fmt.Sprintf("/api/vcenter/vm/%s/power", vmName)
 
-	message, err := DoPowerRequest(client, vmUrl, sessionId, "stop") // Ganti "stop" dengan "start"
+	message, err := api.DoPowerRequest(client, vmUrl, sessionId, "stop") // Ganti "stop" dengan "start"
 
 	if err != nil {
-		if requestErr, ok := err.(RequestError); ok {
+		if requestErr, ok := err.(api.RequestError); ok {
 			fmt.Printf("%s (HTTP Code: %d, Body: %s)\n", requestErr.Error(), requestErr.HTTPCode, requestErr.Body)
 			os.Exit(0)
 		}
