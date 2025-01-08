@@ -1,15 +1,17 @@
-package main
+package conn
 
 import (
 	"fmt"
 	"log"
 
+	"telebot-invent/config"
+
 	telegrambot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
 )
 
-func telegramBot() (*telegrambot.BotAPI, error) {
-	token := config("TELEGRAM_APITOKEN")
+func TelegramBot() (*telegrambot.BotAPI, error) {
+	token := config.Config("TELEGRAM_APITOKEN")
 	bot, err := telegrambot.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("telegram API error: %s", err)

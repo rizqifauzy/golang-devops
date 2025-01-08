@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func config(key string) string {
+func Config(key string) string {
 	// Load .env file
 	err := godotenv.Load(".env")
 	if err != nil {

@@ -1,19 +1,20 @@
-package main
+package api
 
 import (
 	"database/sql"
 	"log"
+	"telebot-invent/conn"
 
 	telegrambot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
 )
 
-func handleUpdate(bot *telegrambot.BotAPI, db *sql.DB, update telegrambot.Update) {
+func HandleUpdate(bot *telegrambot.BotAPI, db *sql.DB, update telegrambot.Update) {
 	if update.Message == nil {
 		return
 	}
 
-	if !isUserAuthorized(update.Message.From.ID) {
+	if !conn.IsUserAuthorized(update.Message.From.ID) {
 		bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "You are not authorized to use this bot."))
 		return
 	}
@@ -51,7 +52,7 @@ func handleCommand(bot *telegrambot.BotAPI, db *sql.DB, update telegrambot.Updat
 	default:
 		text := "Type /start to continue"
 		msg := telegrambot.NewMessage(update.Message.Chat.ID, text)
-		msg.ReplyMarkup = CmdKeyboard()
+		msg.ReplyMarkup = conn.CmdKeyboard()
 		if _, err := bot.Send(msg); err != nil {
 			panic(err)
 		}

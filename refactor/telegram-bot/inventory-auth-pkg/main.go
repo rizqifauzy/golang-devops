@@ -2,18 +2,20 @@ package main
 
 import (
 	"log"
+	"telebot-invent/api"
+	"telebot-invent/conn"
 
 	telegrambot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	bot, err := telegramBot()
+	bot, err := conn.TelegramBot()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db, err := dbConn()
+	db, err := conn.DbConn()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,6 +27,6 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		handleUpdate(bot, db, update)
+		api.HandleUpdate(bot, db, update)
 	}
 }

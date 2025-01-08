@@ -1,6 +1,6 @@
-package main
+package conn
 
-func isUserAuthorized(userID int64) bool {
+func IsUserAuthorized(userID int64) bool {
 	// Daftar ID pengguna yang diizinkan
 	allowedUsers := []int64{
 		243211339, // Ganti dengan ID pengguna yang diizinkan
