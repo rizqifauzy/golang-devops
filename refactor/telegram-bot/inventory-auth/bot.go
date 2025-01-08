@@ -12,7 +12,7 @@ func telegramBot() (*telegrambot.BotAPI, error) {
 	token := config("TELEGRAM_APITOKEN")
 	bot, err := telegrambot.NewBotAPI(token)
 	if err != nil {
-		return nil, fmt.Errorf("Telegram API error: %s", err)
+		return nil, fmt.Errorf("telegram API error: %s", err)
 	}
 
 	bot.Debug = true
