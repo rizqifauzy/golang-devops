@@ -124,7 +124,7 @@ func handleConnection(conn *ssh.ServerConn, chans <-chan ssh.NewChannel) {
 					channel.Write([]byte(output))                                 // Write output to the channel
 					channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}) // Send exit status
 					req.Reply(true, nil)                                          // Acknowledge the request
-					channel.Close()                                               // Close the channel after execution
+					channel.Close()                                               // Close the channel after execution                                            // Close the channel after execution
 				case "shell":
 					req.Reply(true, nil)
 				case "pty-req":
@@ -132,6 +132,7 @@ func handleConnection(conn *ssh.ServerConn, chans <-chan ssh.NewChannel) {
 				default:
 					req.Reply(false, nil)
 				}
+
 			}
 		}(requests)
 	}
@@ -148,6 +149,8 @@ func createTerminal(conn *ssh.ServerConn, channel ssh.Channel) {
 				break
 			}
 			switch line {
+			// case "whoami":
+			// 	termInstance.Write([]byte(execSomething(conn, []byte("whoami"))))
 			case "":
 			case "quit":
 				termInstance.Write([]byte("Goodbye!\n"))
@@ -160,6 +163,36 @@ func createTerminal(conn *ssh.ServerConn, channel ssh.Channel) {
 	}()
 }
 
+// func execSomething(conn *ssh.ServerConn, payload []byte) string {
+// 	switch string(payload) {
+// 	case "whoami":
+// 		return fmt.Sprintf("You are: %s\n", conn.Conn.User())
+// 	default:
+// 		return fmt.Sprintf("Command Not Found: %s\n", string(payload))
+// 	}
+// }
+
+// func execSomething(conn *ssh.ServerConn, payload []byte) string {
+// 	fmt.Printf("Received payload: %s\n", string(payload))
+// 	// Trim payload to remove SSH protocol-specific prefix
+// 	command := string(bytes.TrimSpace(payload)) // Convert payload to string and trim spaces
+// 	fmt.Printf("Executing command: %s\n", command)
+
+// 	// Use sh -c to allow shell commands execution
+// 	cmd := exec.Command("/bin/bash", "-c", command)
+// 	cmd.Env = append(cmd.Env, "PATH=/bin:/usr/bin:/usr/local/bin")
+// 	// Debug PATH
+// 	fmt.Printf("Using PATH: %s\n", cmd.Env)
+
+// 	// Capture combined output (stdout and stderr)
+// 	output, err := cmd.CombinedOutput()
+// 	if err != nil {
+// 		fmt.Printf("Command failed: %s\n", err)
+// 		return fmt.Sprintf("Error executing command: %s\nOutput: %s\n", err, string(output))
+// 	}
+// 	return string(output)
+// }
+
 func execSomething(conn *ssh.ServerConn, command string) string {
 	fmt.Printf("Executing command: %s\n", command)
 
@@ -171,9 +204,9 @@ func execSomething(conn *ssh.ServerConn, command string) string {
 
 	// Use the first argument as the command and the rest as arguments
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Env = append(cmd.Env, "PATH=/bin:/usr/bin:/usr/local/bin")
+	//cmd.Env = append(cmd.Env, "PATH=/bin:/usr/bin:/usr/local/bin")
 	// Debug PATH
-	fmt.Printf("Using PATH: %s\n", cmd.Env)
+	//fmt.Printf("Using PATH: %s\n", cmd.Env)
 
 	// Capture combined output (stdout and stderr)
 	output, err := cmd.CombinedOutput()
