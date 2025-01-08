@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -18,50 +16,25 @@ type server struct {
 }
 
 func (s server) webhook(w http.ResponseWriter, req *http.Request) {
-	ctx := context.Background()
 	payload, err := github.ValidatePayload(req, []byte(s.webhookSecretKey))
 	if err != nil {
 		w.WriteHeader(500)
-		fmt.Printf("ValidatePayload error: %s", err)
+		fmt.Printf("ValidatePayload Error: %s\n", err)
 		return
 	}
 	event, err := github.ParseWebHook(github.WebHookType(req), payload)
 	if err != nil {
 		w.WriteHeader(500)
-		fmt.Printf("ValidatePayload error: %s", err)
+		fmt.Printf("ParseWebHook Error: %s\n", err)
 		return
 	}
 	switch event := event.(type) {
-	case *github.Hook:
-		fmt.Printf("Hook is created\n")
 	case *github.PushEvent:
 		files := getFiles(event.Commits)
 		fmt.Printf("Found files: %s\n", strings.Join(files, ", "))
-		for _, filename := range files {
-			downloadedFile, _, err := s.githubClient.Repositories.DownloadContents(ctx, *event.Repo.Owner.Name, *event.Repo.Name, filename, &github.RepositoryContentGetOptions{})
-			if err != nil {
-				w.WriteHeader(500)
-				fmt.Printf("DownloadContents error: %s", err)
-				return
-			}
-			defer downloadedFile.Close()
-			fileBody, err := io.ReadAll(downloadedFile)
-			if err != nil {
-				w.WriteHeader(500)
-				fmt.Printf("ReadAll error: %s", err)
-				return
-			}
-			_, _, err = deploy(ctx, s.client, fileBody)
-			if err != nil {
-				w.WriteHeader(500)
-				fmt.Printf("deploy error: %s", err)
-				return
-			}
-			fmt.Printf("Deploy of %s finished\n", filename)
-		}
 	default:
 		w.WriteHeader(500)
-		fmt.Printf("Event not found: %s", event)
+		fmt.Printf("Event not found: %s\n", event)
 		return
 	}
 }

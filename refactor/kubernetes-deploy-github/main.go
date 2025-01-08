@@ -23,50 +23,69 @@ import (
 
 func main() {
 	var (
-		client *kubernetes.Clientset
-		err    error
+		// client       *kubernetes.Clientset
+		// githubClient *github.Client
+		err error
+		//deploymentLabels map[string]string
+		//expectedPods     int32
 	)
 	ctx := context.Background()
-	if client, err = getClient(ctx, false); err != nil {
-		fmt.Printf("Error: %s\n", err)
+	s := server{
+		webhookSecretKey: os.Getenv("WEBHOOK_SECRET"),
+	}
+	if s.client, err = getClient(false); err != nil {
+		fmt.Printf("Get Client Error : %s", err)
 		os.Exit(1)
 	}
-	serverInstance := server{
-		client:           client,
-		webhookSecretKey: os.Getenv("WEBHOOK_SECRET"),
-		githubClient:     getGitHubClient(ctx, os.Getenv("GITHUB_TOKEN")),
+
+	if s.githubClient = getGithubClient(ctx, os.Getenv("GITHUB_TOKEN")); err != nil {
+		fmt.Printf("Get Client Error : %s", err)
+		os.Exit(1)
 	}
 
-	http.HandleFunc("/webhook", serverInstance.webhook)
+	http.HandleFunc("/webhook", s.webhook)
+	http.ListenAndServe(":8080", nil)
 
-	err = http.ListenAndServe(":8080", nil)
-	fmt.Printf("Exited: %s\n", err)
 }
-func getClient(ctx context.Context, inCluster bool) (*kubernetes.Clientset, error) {
+
+func getClient(inCluster bool) (*kubernetes.Clientset, error) {
+	//var kubeconfig *string
+	//if home := homedir.HomeDir(); home != "" {
+	//kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	// } else {
+	// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	// }
+	//flag.Parse()
+
+	// use the current context in kubeconfig
 	var (
 		config *rest.Config
 		err    error
 	)
+
 	if inCluster {
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		kubeConfigPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
-		config, err = clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+		// use the current context in kubeconfig
+		config, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 		if err != nil {
 			return nil, err
 		}
 	}
-	client, err := kubernetes.NewForConfig(config)
+
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	return client, nil
+
+	return clientset, nil
 }
 
-func getGitHubClient(ctx context.Context, token string) *github.Client {
+func getGithubClient(ctx context.Context, token string) *github.Client {
 	if token == "" {
 		return github.NewClient(nil)
 	}
@@ -78,13 +97,16 @@ func getGitHubClient(ctx context.Context, token string) *github.Client {
 	return github.NewClient(tc)
 }
 
-func deploy(ctx context.Context, client *kubernetes.Clientset, appFile []byte) (map[string]string, int32, error) {
+func deploy(ctx context.Context, client *kubernetes.Clientset) (map[string]string, int32, error) {
 	var deployment *v1.Deployment
 
-	obj, groupVersionKind, err := scheme.Codecs.UniversalDeserializer().Decode(appFile, nil, nil)
+	appFile, err := os.ReadFile("deploy.yaml")
 	if err != nil {
-		return nil, 0, fmt.Errorf("Decode error: %s", err)
+		return nil, 0, fmt.Errorf("ReadFile error: %s", err)
 	}
+	// decode := scheme.Codecs.UniversalDeserializer().Decode
+	// obj, groupVersionKind, err := decode(appFile, nil, nil)
+	obj, groupVersionKind, err := scheme.Codecs.UniversalDeserializer().Decode(appFile, nil, nil)
 
 	switch obj.(type) {
 	case *v1.Deployment:
@@ -106,38 +128,37 @@ func deploy(ctx context.Context, client *kubernetes.Clientset, appFile []byte) (
 
 	deploymentResponse, err := client.AppsV1().Deployments("default").Update(ctx, deployment, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, 0, fmt.Errorf("deployment error: %s", err)
+		return nil, 0, fmt.Errorf("Update deployment error: %s", err)
 	}
 	return deploymentResponse.Spec.Template.Labels, *deploymentResponse.Spec.Replicas, nil
-
 }
+
 func waitForPods(ctx context.Context, client *kubernetes.Clientset, deploymentLabels map[string]string, expectedPods int32) error {
 	for {
 		validatedLabels, err := labels.ValidatedSelectorFromSet(deploymentLabels)
 		if err != nil {
-			return fmt.Errorf("ValidatedSelectorFromSet error: %s", err)
+			return fmt.Errorf("ValidatedSelectorFromSet: %s", err)
 		}
 
 		podList, err := client.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 			LabelSelector: validatedLabels.String(),
 		})
 		if err != nil {
-			return fmt.Errorf("pod list error: %s", err)
+			return fmt.Errorf("list pods error: %s", err)
 		}
 		podsRunning := 0
-		for _, pod := range podList.Items {
-			if pod.Status.Phase == "Running" {
+		for _, pods := range podList.Items {
+			if pods.Status.Phase == "Running" {
 				podsRunning++
 			}
 		}
-
-		fmt.Printf("Waiting for pods to become ready (running %d / %d)\n", podsRunning, len(podList.Items))
-
+		fmt.Printf("waiting for pods to become ready (running %d / %d)\n", podsRunning, len(podList.Items))
 		if podsRunning > 0 && podsRunning == len(podList.Items) && podsRunning == int(expectedPods) {
 			break
 		}
-
 		time.Sleep(5 * time.Second)
+
 	}
+
 	return nil
 }
