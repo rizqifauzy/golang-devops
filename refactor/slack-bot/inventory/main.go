@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -59,46 +60,97 @@ func main() {
 	}
 	defer db.Close()
 
-	// Goroutine to handle incoming socket events
-	go func() {
-		for event := range socketClient.Events {
-			switch event.Type {
-			case socketmode.EventTypeInteractive:
-				callback, ok := event.Data.(slack.InteractionCallback)
-				if !ok {
-					log.Println("Ignored unsupported event")
-					continue
-				}
-				if callback.Type == slack.InteractionTypeBlockActions {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func(ctx context.Context, client *slack.Client, socketClient *socketmode.Client) {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Println("Shutting down socketmode listener")
+				return
+			case event := <-socketClient.Events:
+				switch event.Type {
+				case socketmode.EventTypeInteractive:
+					callback, ok := event.Data.(slack.InteractionCallback)
+					if !ok {
+						log.Println("Ignored unsupported event")
+						continue
+					}
+					if callback.Type == slack.InteractionTypeBlockActions {
+						socketClient.Ack(*event.Request)
+						continue
+					}
+
+				case socketmode.EventTypeSlashCommand:
+
+					command, ok := event.Data.(slack.SlashCommand)
+					if !ok {
+						log.Println("Ignored unsupported slash command")
+						continue
+					}
 					socketClient.Ack(*event.Request)
-					continue
-				}
+					handleSlashCommand(command, client, db)
+				case socketmode.EventTypeEventsAPI:
+					eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
+					if !ok {
+						log.Printf("Could not typecast the event to EventsAPIEvent: %v\n", event)
+						continue
+					}
 
-			case socketmode.EventTypeSlashCommand:
+					// Acknowledge the event
+					socketClient.Ack(*event.Request)
 
-				command, ok := event.Data.(slack.SlashCommand)
-				if !ok {
-					log.Println("Ignored unsupported slash command")
-					continue
-				}
-				socketClient.Ack(*event.Request)
-				handleSlashCommand(command, client, db)
-			case socketmode.EventTypeEventsAPI:
-				eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
-				if !ok {
-					log.Printf("Could not typecast the event to EventsAPIEvent: %v\n", event)
-					continue
-				}
-
-				socketClient.Ack(*event.Request)
-
-				err := HandleEventMessage(eventsAPI, client)
-				if err != nil {
-					log.Printf("Error handling event: %v", err)
+					// Handle the event
+					err := HandleEventMessage(eventsAPI, client)
+					if err != nil {
+						log.Printf("Error handling event: %v", err)
+					}
 				}
 			}
 		}
-	}()
+	}(ctx, client, socketClient)
+
+	// Goroutine to handle incoming socket events
+	// go func() {
+	// 	for event := range socketClient.Events {
+	// 		switch event.Type {
+	// 		case socketmode.EventTypeInteractive:
+	// 			callback, ok := event.Data.(slack.InteractionCallback)
+	// 			if !ok {
+	// 				log.Println("Ignored unsupported event")
+	// 				continue
+	// 			}
+	// 			if callback.Type == slack.InteractionTypeBlockActions {
+	// 				socketClient.Ack(*event.Request)
+	// 				continue
+	// 			}
+
+	// 		case socketmode.EventTypeSlashCommand:
+
+	// 			command, ok := event.Data.(slack.SlashCommand)
+	// 			if !ok {
+	// 				log.Println("Ignored unsupported slash command")
+	// 				continue
+	// 			}
+	// 			socketClient.Ack(*event.Request)
+	// 			handleSlashCommand(command, client, db)
+	// 		case socketmode.EventTypeEventsAPI:
+	// 			eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
+	// 			if !ok {
+	// 				log.Printf("Could not typecast the event to EventsAPIEvent: %v\n", event)
+	// 				continue
+	// 			}
+
+	// 			socketClient.Ack(*event.Request)
+
+	// 			err := HandleEventMessage(eventsAPI, client)
+	// 			if err != nil {
+	// 				log.Printf("Error handling event: %v", err)
+	// 			}
+	// 		}
+	// 	}
+	// }()
 
 	// Start the socket client
 	socketClient.Run()
