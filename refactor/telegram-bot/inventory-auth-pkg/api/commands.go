@@ -2,60 +2,62 @@ package api
 
 import (
 	"database/sql"
-	"log"
-	"telebot-invent/conn"
-
-	telegrambot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	_ "github.com/lib/pq"
+	"fmt"
 )
 
-func HandleUpdate(bot *telegrambot.BotAPI, db *sql.DB, update telegrambot.Update) {
-	if update.Message == nil {
-		return
-	}
-
-	if !conn.IsUserAuthorized(update.Message.From.ID) {
-		bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "You are not authorized to use this bot."))
-		return
-	}
-
-	if update.Message.IsCommand() {
-		handleCommand(bot, db, update)
-	}
+type ServerInfo struct {
+	VM           string
+	IPOAM        string
+	IPService    string
+	Powerstate   string
+	Datacenter   string
+	OS           string
+	AppsName     string
+	AppsPriority string
+	AppsCustody  string
+	ProdNonProd  string
+	Environment  string
+	Site         string
+	ManagedBy    string
+	SupportLevel string
+	Notes        string
 }
 
-func handleCommand(bot *telegrambot.BotAPI, db *sql.DB, update telegrambot.Update) {
-	switch update.Message.Command() {
-	case "info":
-		payload := update.Message.CommandArguments()
-		if payload == "" {
-			bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "Please input a server name or IP address.\nExample: /info serverapp1"))
-			return
-		}
+func GetServerInfo(db *sql.DB, query string) (*ServerInfo, error) {
+	var info ServerInfo
+	row := db.QueryRow(`SELECT vm_name, ip_oam, ip_service, powerstate, datacenter, os_configuration, apps_name,   
+		apps_priority, apps_custody, prod_non_prod, environment, site, managed_by,   
+		support_level, notes FROM servers WHERE vm_name = $1 OR ip_oam = $1`, query)
 
-		info, err := getServerInfo(db, payload)
-		if err != nil {
-			bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "Error retrieving server info."))
-			log.Println("Error querying database:", err)
-			return
-		}
-
-		if info == nil {
-			bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "Server not found."))
-			return
-		}
-
-		response := formatServerInfo(info)
-		bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, response))
-	case "start":
-		bot.Send(telegrambot.NewMessage(update.Message.Chat.ID, "Usage: /info <server_name_or_IPOAM>"))
-	default:
-		text := "Type /start to continue"
-		msg := telegrambot.NewMessage(update.Message.Chat.ID, text)
-		msg.ReplyMarkup = conn.CmdKeyboard()
-		if _, err := bot.Send(msg); err != nil {
-			panic(err)
-		}
+	err := row.Scan(&info.VM, &info.IPOAM, &info.IPService, &info.Powerstate, &info.Datacenter, &info.OS,
+		&info.AppsName, &info.AppsPriority, &info.AppsCustody, &info.ProdNonProd, &info.Environment,
+		&info.Site, &info.ManagedBy, &info.SupportLevel, &info.Notes)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
+	return &info, nil
+}
 
+func FormatServerInfo(info *ServerInfo) string {
+	return fmt.Sprintf(`Informasi Server:  
+VM: %s  
+IPOAM: %s  
+IPService: %s  
+Powerstate: %s  
+Datacenter: %s  
+OS according to the configuration file: %s  
+Apps Name: %s  
+Apps Priority: %s  
+Apps Custody (Email Address): %s  
+Prod/Non Prod: %s  
+Environment: %s  
+Site: %s  
+Managed By: %s  
+Support Level: %s  
+Notes: %s`,
+		info.VM, info.IPOAM, info.IPService, info.Powerstate, info.Datacenter, info.OS,
+		info.AppsName, info.AppsPriority, info.AppsCustody, info.ProdNonProd, info.Environment,
+		info.Site, info.ManagedBy, info.SupportLevel, info.Notes)
 }

@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"telebot-invent/api"
 	"telebot-invent/conn"
+	"telebot-invent/handlers"
 
 	telegrambot "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
@@ -27,6 +27,6 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		api.HandleUpdate(bot, db, update)
+		handlers.HandleUpdate(bot, db, update)
 	}
 }
